@@ -509,15 +509,8 @@ extern "system" {
 #[tokio::main(flavor = "current_thread")]
 async fn run_service(_arguments: Vec<OsString>) -> ResultType<()> {
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
-        log::info!("Got service control event: {:?}", control_event);
-        match control_event {
-            ServiceControl::Interrogate => ServiceControlHandlerResult::NoError,
-            ServiceControl::Stop | ServiceControl::Preshutdown | ServiceControl::Shutdown => {
-                send_close(crate::POSTFIX_SERVICE).ok();
-                ServiceControlHandlerResult::NoError
-            }
-            _ => ServiceControlHandlerResult::NotImplemented,
-        }
+    log::info!("Ignoring service stop request: {:?}", control_event);
+    ServiceControlHandlerResult::NoError
     };
 
     // Register system service event handler
@@ -713,13 +706,8 @@ async fn send_close(postfix: &str) -> ResultType<()> {
     send_close_async(postfix).await
 }
 
-async fn send_close_async(postfix: &str) -> ResultType<()> {
-    ipc::connect(1000, postfix)
-        .await?
-        .send(&ipc::Data::Close)
-        .await?;
-    // sleep a while to wait for closing and exit
-    sleep(0.1).await;
+async fn send_close_async(_postfix: &str) -> ResultType<()> {
+    log::info!("Ignoring service shutdown request");
     Ok(())
 }
 
